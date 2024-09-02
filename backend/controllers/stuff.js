@@ -64,14 +64,13 @@ exports.modifyBook = (req, res, next) => {
     .catch((error) => res.status(400).json({ error }));
 };
 
-/*
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
         res.status(401).json({ message: "Non autorisé !" });
       } else {
-        const filname = book.imageUrl.split("/images")[1];
+        const filename = book.imageUrl.split("/images")[1];
         fs.unlink(`images/${filename}`, () => {
           Book.deleteOne({ _id: req.params.id })
             .then(() => {
@@ -84,31 +83,97 @@ exports.deleteBook = (req, res, next) => {
     .catch((error) => {
       res.status(500).json({ error });
     });
-};*/
+};
 
-exports.getOneBook = async (req, res, next) => {
+exports.getOneBook = async (req, res) => {
   try {
-    const book = await Book.findOne({ _id: req.params.id })
-      .then((books) => res.status(200).json(books))
-      .catch((error) => res.status(404).json({ error }));
+    console.log("Recherche du livre avec ID:", req.params.id);
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+    console.log("Livre trouvé:", book);
+
+    res.status(200).json(book);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-/*
-exports.getAllBooks = (req, res, next) => {
-  Book.find()
-    .then((books) => res.status(200).json(books))
-    .catch((error) => res.status(400).json({ error }));
-};*/
 exports.getAllBooks = async (req, res) => {
   try {
     const books = await Book.find().catch((error) =>
       res.status(400).json({ error })
-    ); // si le serveur ne comprend pas la requete
-    res.json(books); // Les livres sont envoyés au client sous forme de réponse JSON
+    );
+    res.json(books);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.ratingNotation = async (req, res) => {
+  try {
+    console.log("Début de la fonction ratingNotation"); // Log début
+    const { userId, rating } = req.body;
+    const bookId = req.params.id;
+
+    console.log(`userId: ${userId}, rating: ${rating}, bookId: ${bookId}`); // Log des paramètres
+
+    if (rating < 0 || rating > 5) {
+      console.log("La note est hors limites");
+      return res
+        .status(400)
+        .json({ message: "La note doit être comprise entre 0 et 5." });
+    }
+
+    const book = await Book.findById(bookId);
+    if (!book) {
+      console.log("Livre non trouvé");
+      return res.status(404).json({ message: "Livre non trouvé." });
+    }
+
+    const existingRating = book.ratings.find((r) => r.userId === userId);
+    if (existingRating) {
+      console.log("Note déjà ajoutée pour ce livre par cet utilisateur");
+      return res.status(400).json({ message: "Vous avez déjà noté ce livre." });
+    }
+
+    // Ajouter la nouvelle note
+    book.ratings.push({ userId, grade: rating });
+
+    // Calcul de la moyenne des notes
+    const totalRatings = book.ratings.length;
+    const totalScore = book.ratings.reduce((sum, r) => sum + r.grade, 0);
+    book.averageRating = totalScore / totalRatings;
+
+    console.log("Enregistrement des modifications dans la base de données");
+    await book.save();
+
+    console.log("Note ajoutée avec succès:", book);
+    return res.status(200).json(book);
+  } catch (error) {
+    console.error("Erreur lors de l'ajout de la note:", error);
+    return res
+      .status(500)
+      .json({ message: "Erreur lors de l'ajout de la note." });
+  }
+};
+
+exports.getBestRatingBooks = async (req, res) => {
+  try {
+    // Trouver les livres triés par note moyenne (averageRating) en ordre décroissant
+    const books = await Book.find().sort({ averageRating: -1 }).limit(3); // Limite à 3 livres par exemple
+    console.log("Livres avec les meilleures notes:", books);
+    res.status(200).json(books);
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des livres les mieux notés:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        message: "Erreur lors de la récupération des livres les mieux notés.",
+      });
   }
 };

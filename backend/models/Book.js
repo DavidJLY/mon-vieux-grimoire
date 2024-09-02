@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const ratingSchema = require("./Rating");
 
 const bookSchema = mongoose.Schema({
   title: { type: String, require: true },
@@ -6,12 +7,9 @@ const bookSchema = mongoose.Schema({
   imageUrl: { type: String, require: true },
   year: { type: Number, require: true },
   genre: { type: String, require: true },
-  /*ratings: [
-        {
-            grade: { type: Number, require: true },
-        }
-    ],
-    averageRating: { type: Number, require: true },*/
+  userId: { type: String, require: true },
+  ratings: [ratingSchema],
+  averageRating: { type: Number, required: true, default: 0 },
 });
 
 module.exports = mongoose.model("Book", bookSchema);
