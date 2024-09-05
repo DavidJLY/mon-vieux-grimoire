@@ -2,7 +2,7 @@ require("dotenv").config();
 const http = require("http");
 const app = require("./app");
 
-// Function to normalize the port
+// Function to normalize port
 const normalizePort = (val) => {
   const port = parseInt(val, 10);
 
@@ -39,6 +39,7 @@ const errorHandler = (error) => {
   }
 };
 
+//HTTP server creation
 const server = http.createServer(app);
 
 server.on("error", errorHandler);

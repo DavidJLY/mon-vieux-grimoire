@@ -115,7 +115,6 @@ exports.getOneBook = async (req, res) => {
     if (!book) {
       return res.status(404).json({ message: "Livre non trouvé" });
     }
-    console.log("Livre trouvé:", book);
 
     res.status(200).json(book);
   } catch (error) {
@@ -136,11 +135,8 @@ exports.getAllBooks = async (req, res) => {
 
 exports.ratingNotation = async (req, res) => {
   try {
-    console.log("Début de la fonction ratingNotation"); // Log début
     const { userId, rating } = req.body;
     const bookId = req.params.id;
-
-    console.log(`userId: ${userId}, rating: ${rating}, bookId: ${bookId}`); // Log des paramètres
 
     if (rating < 0 || rating > 5) {
       console.log("La note est hors limites");
@@ -151,13 +147,11 @@ exports.ratingNotation = async (req, res) => {
 
     const book = await Book.findById(bookId);
     if (!book) {
-      console.log("Livre non trouvé");
       return res.status(404).json({ message: "Livre non trouvé." });
     }
 
     const existingRating = book.ratings.find((r) => r.userId === userId);
     if (existingRating) {
-      console.log("Note déjà ajoutée pour ce livre par cet utilisateur");
       return res.status(400).json({ message: "Vous avez déjà noté ce livre." });
     }
 
@@ -167,12 +161,10 @@ exports.ratingNotation = async (req, res) => {
     // Calcul de la moyenne des notes
     const totalRatings = book.ratings.length;
     const totalScore = book.ratings.reduce((sum, r) => sum + r.grade, 0);
-    book.averageRating = totalScore / totalRatings;
+    book.averageRating = Math.round(totalScore / totalRatings);
 
-    console.log("Enregistrement des modifications dans la base de données");
     await book.save();
 
-    console.log("Note ajoutée avec succès:", book);
     return res.status(200).json(book);
   } catch (error) {
     console.error("Erreur lors de l'ajout de la note:", error);
