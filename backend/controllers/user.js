@@ -38,7 +38,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Si tout est correct, créer un token JWT et renvoyer la réponse
-    const token = jwt.sign({ userId: user._id }, "RANDOM_TOKEN_SECRET", {
+    const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
       expiresIn: "24h",
     });
 

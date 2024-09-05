@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
@@ -29,10 +30,10 @@ app.use((req, res, next) => {
 //Mongoose connect
 mongoose
   .connect(
-    "mongodb+srv://dj06700:kKlcEfnnOMGqPErj@cluster0.7s2zf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    `mongodb+srv://${process.env.MONGOOSE_ID}:${process.env.MONGOOSE_MDP}@cluster0.7s2zf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
   )
   .then(() => console.log("Connexion à MongoDB réussie !"))
-  .catch(() => console.log("Connexion à MongoDB échouée !"));
+  .catch((error) => console.log("Connexion à MongoDB échouée !", error));
 
 app.use("/api/auth", userRoutes);
 app.use("/api/books", stuffRoutes);

@@ -1,5 +1,6 @@
 const Book = require("../models/Book");
 const fs = require("fs");
+const path = require("path");
 
 exports.createBook = (req, res, next) => {
   try {
@@ -41,27 +42,49 @@ exports.modifyBook = (req, res, next) => {
   const bookObject = req.file
     ? {
         ...JSON.parse(req.body.book),
-        inmageUrl: `${req.protocol}://${req.get("host")}/images/${
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${
           req.file.filename
         }`,
       }
     : { ...req.body };
 
   delete bookObject._userId;
+
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: "Non autorisé !" });
+        return res.status(401).json({ message: "Non autorisé !" });
       } else {
+        if (req.file) {
+          const oldFilename = book.imageUrl.split("/images/")[1];
+          fs.unlink(
+            path.join(__dirname, "..", "images", oldFilename),
+            (err) => {
+              if (err) {
+                console.error(
+                  "Erreur lors de la suppression de l'ancienne image :",
+                  err
+                );
+              }
+            }
+          );
+        }
+
         Book.updateOne(
           { _id: req.params.id },
           { ...bookObject, _id: req.params.id }
         )
-          .then(() => res.status(200).json({ message: "Objet modifié !" }))
-          .catch((error) => res.status(401).json({ error }));
+          .then(() => {
+            return res.status(200).json({ message: "Objet modifié !" });
+          })
+          .catch((error) => {
+            return res.status(401).json({ error });
+          });
       }
     })
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => {
+      return res.status(400).json({ error });
+    });
 };
 
 exports.deleteBook = (req, res, next) => {
@@ -163,17 +186,14 @@ exports.getBestRatingBooks = async (req, res) => {
   try {
     // Trouver les livres triés par note moyenne (averageRating) en ordre décroissant
     const books = await Book.find().sort({ averageRating: -1 }).limit(3); // Limite à 3 livres par exemple
-    console.log("Livres avec les meilleures notes:", books);
     res.status(200).json(books);
   } catch (error) {
     console.error(
       "Erreur lors de la récupération des livres les mieux notés:",
       error
     );
-    res
-      .status(500)
-      .json({
-        message: "Erreur lors de la récupération des livres les mieux notés.",
-      });
+    res.status(500).json({
+      message: "Erreur lors de la récupération des livres les mieux notés.",
+    });
   }
 };
